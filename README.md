@@ -1,53 +1,79 @@
-# New Project Template
+# Mobly Windows Controller
 
-This repository contains a template that can be used to seed a repository for a
-new Google open source project.
+Mobly Windows controller module for using Python code to operate Windows devices in Mobly tests.
 
-See [go/releasing](http://go/releasing) (available externally at
-https://opensource.google/documentation/reference/releasing) for more information about
-releasing a new Google open source project.
+## Requirements
 
-This template uses the Apache license, as is Google's default.  See the
-documentation for instructions on using alternate license.
+-   Python 3.7+
+-   Mobly 1.12.2+
 
-## How to use this template
+## Installation
 
-1. Clone it from GitHub.
-    * There is no reason to fork it.
-1. Create a new local repository and copy the files from this repo into it.
-1. Modify README.md and docs/contributing.md to represent your project, not the
-   template project.
-1. Develop your new project!
-
-``` shell
-git clone https://github.com/google/new-project
-mkdir my-new-thing
-cd my-new-thing
-git init
-cp -r ../new-project/* ../new-project/.github .
-git add *
-git commit -a -m 'Boilerplate for new Google open source project'
+```shell
+pip install mobly-windows
 ```
 
-## Source Code Headers
+## Start to Use
 
-Every file containing source code must include copyright and license
-information. This includes any JS/CSS files that you might be serving out to
-browsers. (This is to help well-intentioned people avoid accidental copying that
-doesn't comply with the license.)
+Mobly Windows controller is an add-on to control Windows devices in [Mobly](https://github.com/google/mobly).
+To learn more about Mobly, visit [Getting started with Mobly](https://github.com/google/mobly/blob/master/docs/tutorial.md).
 
-Apache header:
+### Write Mobly Device Configs
 
-    Copyright 2022 Google LLC
+To use a Windows device in Mobly tests, first you need to write a config to specify the information of the device under test. For example:
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+**sample_config.yaml**
 
-        https://www.apache.org/licenses/LICENSE-2.0
+```yaml
+TestBeds:
+- Name: SampleWindowsTestbed
+  Controllers:
+    WindowsDevice:
+    - device_id: 'DEVICE_ID'
+      hostname: 'IP_ADDRESS'
+      username: 'USERNAME'
+      password: 'PASSWORD'
+```
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+NOTE: Replace `DEVICE_ID`, `IP_ADDRESS`, `USERNAME`, `PASSWORD` with your device information.
+
+### Write a Hello World Mobly Test
+
+**hello_world_test.py**
+
+```python
+"""A basic Mobly Test with Windows device."""
+
+from mobly import base_test
+from mobly import test_runner
+from mobly_windows import windows_device
+
+
+class HelloWorldTest(base_test.BaseTestClass):
+  """A sample test demonstrating using Mobly Windows controller."""
+
+  def setup_class(self):
+    super().setup_class()
+    # Registers windows_device controller module. By default, we expect at
+    # least one Windows device.
+    self._wind = self.register_controller(windows_device)[0]
+
+  def test_ssh_execute_command(self):
+    # Executes console command 'SYSTEMINFO' on the Windows device and gets the result.
+    result = self._wind.ssh.execute_command('SYSTEMINFO')
+    self._wind.log.info('Command execution result: %s', result)
+
+
+if __name__ == '__main__':
+  test_runner.main()
+
+```
+
+### Execute the Test
+
+```bash
+python hello_world_test.py -c sample_config.yaml
+```
+
+Expect:
+The system information of the Windows device under test is logged in your console.

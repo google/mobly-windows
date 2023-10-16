@@ -1,0 +1,4 @@
+mobly>=1.12.2
+dacite
+paramiko
+zmq

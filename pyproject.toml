@@ -1,0 +1,15 @@
+[project]
+name = "mobly-windows"
+description = "Mobly Windows controller module for using Python code to operate Windows devices in Mobly tests"
+authors = [{ name = "Google Inc." }]
+maintainers = [{ name = "Shuyu Zheng", email = "zhengshuyu@google.com" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.7"
+version = "1.0.0"
+dependencies = [
+    'mobly>=1.12.2',
+    'dacite',
+    'paramiko',
+    'zmq',
+]
