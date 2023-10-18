@@ -15,7 +15,7 @@ pip install mobly-windows
 
 ## Start to Use
 
-Mobly Windows controller is an add-on to control Windows devices in [Mobly](https://github.com/google/mobly).
+Mobly Windows controller is an add-on module to control Windows devices in [Mobly](https://github.com/google/mobly).
 To learn more about Mobly, visit [Getting started with Mobly](https://github.com/google/mobly/blob/master/docs/tutorial.md).
 
 ### Write Mobly Device Configs
@@ -46,7 +46,7 @@ NOTE: Replace `DEVICE_ID`, `IP_ADDRESS`, `USERNAME`, `PASSWORD` with your device
 
 from mobly import base_test
 from mobly import test_runner
-from mobly_windows import windows_device
+from mobly.controllers.windows import windows_device
 
 
 class HelloWorldTest(base_test.BaseTestClass):

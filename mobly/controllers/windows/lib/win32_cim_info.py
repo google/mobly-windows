@@ -27,8 +27,8 @@ from typing import Any, TypeVar
 import dacite
 from mobly import logger as mobly_logger
 
-from mobly_windows.lib import errors
-from mobly_windows.lib import ssh as ssh_lib
+from mobly.controllers.windows.lib import errors
+from mobly.controllers.windows.lib import ssh as ssh_lib
 
 T = TypeVar('T')
 

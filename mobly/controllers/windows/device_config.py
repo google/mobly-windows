@@ -24,7 +24,7 @@ from typing import Any
 
 import dacite
 
-from mobly_windows.lib import errors
+from mobly.controllers.windows.lib import errors
 
 _WINDOWS_DEVICE_EMPTY_CONFIG_MSG = 'Configuration is empty, abort!'
 _WINDOWS_DEVICE_CONFIGS_NOT_LIST_MSG = (

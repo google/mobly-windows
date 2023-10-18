@@ -31,7 +31,7 @@ setuptools.setup(
     description='Mobly Windows controller module for using Python code to operate Windows devices in Mobly tests.',
     license='Apache2.0',
     url='https://github.com/google/mobly-windows',
-    packages=['mobly_windows'],
+    packages=setuptools.find_namespace_packages(include=['mobly.controllers.*']),
     install_requires=install_requires,
     python_requires='>=3.7',
 )

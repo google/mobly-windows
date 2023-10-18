@@ -37,8 +37,8 @@ from paramiko import sftp_attr
 from paramiko import ssh_exception
 from zmq.ssh import forward
 
-from mobly_windows import device_config
-from mobly_windows.lib import errors
+from mobly.controllers.windows import device_config
+from mobly.controllers.windows.lib import errors
 
 
 # Windows Console uses character sets based on system languages.

@@ -26,10 +26,10 @@ from typing import Any
 
 from mobly import logger as mobly_logger
 
-from mobly_windows import device_config
-from mobly_windows.lib import errors
-from mobly_windows.lib import ssh
-from mobly_windows.lib import win32_cim_info
+from mobly.controllers.windows import device_config
+from mobly.controllers.windows.lib import errors
+from mobly.controllers.windows.lib import ssh
+from mobly.controllers.windows.lib import win32_cim_info
 
 # This is used in the config file located in the test lab's home directory.
 MOBLY_CONTROLLER_CONFIG_NAME = 'WindowsDevice'

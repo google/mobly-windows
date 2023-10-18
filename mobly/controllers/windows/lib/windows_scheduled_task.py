@@ -18,8 +18,8 @@ import base64
 import enum
 import logging
 
-from mobly_windows.lib import errors
-from mobly_windows.lib import ssh as win_ssh
+from mobly.controllers.windows.lib import errors
+from mobly.controllers.windows.lib import ssh as win_ssh
 
 
 class WindowsScheduledTask:
