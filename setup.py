@@ -25,7 +25,7 @@ install_requires = [
 
 setuptools.setup(
     name='mobly-windows',
-    version='1.0.0',
+    version='1.0.1',
     author='Shuyu Zheng',
     author_email='zhengshuyu@google.com',
     description='Mobly Windows controller module for using Python code to operate Windows devices in Mobly tests.',

@@ -28,6 +28,7 @@ from mobly import logger as mobly_logger
 
 from mobly.controllers.windows import device_config
 from mobly.controllers.windows.lib import errors
+from mobly.controllers.windows.lib import snippet_client
 from mobly.controllers.windows.lib import ssh
 from mobly.controllers.windows.lib import win32_cim_info
 
@@ -179,11 +180,13 @@ class WindowsDevice:
 
   _ssh: ssh.SSHProxy | None = None
   _win32_info: win32_cim_info.Win32CIMInfoCollection | None = None
+  _snippet_clients: Mapping[str, snippet_client.SnippetClient]
   _debug_tag: str
 
   def __init__(self, config: device_config.DeviceConfig) -> None:
     self.config = config
     self.device_id = config.device_id
+    self._snippet_clients = {}
 
     # logging.log_path only exists when this is used in a Mobly test run.
     log_path_base = getattr(logging, 'log_path', '/tmp/logs')
@@ -275,8 +278,31 @@ class WindowsDevice:
 
     This function releases following resources:
     * SSH session
+    * all the loaded snippets
+    * user artifacts
+    * UI daemon client
+    * Long-running services
+    """
+    if self._services is not None:
+      self._services.unregister_all()
+      self._services = None
+
+    # Unload snippets before disconnecting the SSH session, because the unload
+    # process needs to communicate with the device.
+    self._unload_all_snippets()
+
+  def destroy(self) -> None:
+    """Tears WindowsDevice object down.
+
+    This function releases following resources:
+    * All the loaded snippets
+    * SSH session
     * User artifacts
     """
+    # Unload snippets before disconnecting the SSH session, because the unload
+    # process needs to communicate with the device.
+    self._unload_all_snippets()
+
     if self._ssh:
       # Clears the user artifacts and closes the SSH session.
       self._clear_user_artifacts_dir()
@@ -340,6 +366,108 @@ class WindowsDevice:
     except errors.ExecuteCommandError as e:
       raise errors.Error(
           f'Failed to delete firewall rule "{rule_name}".') from e
+
+  def load_snippet(self,
+                   name: str,
+                   snippet_binary_host_path: str | None = None,
+                   snippet_additional_file_host_paths: list[str] | None = None,
+                   snippet_binary_device_path: str | None = None) -> None:
+    r"""Loads the snippet with the specified snippet binary.
+
+    This function creates a snippet client with the specified snippet binary,
+    initializes the client and attaches the client to an attribute of this
+    device object.
+
+    For ease of use, the snippet client can manage binary related files on the
+    device side. Set `snippet_binary_host_path`, then the client will upload
+    the binary file to the device when launching the snippet and delete it
+    when stopping. If there are some additional files used by the  binary, the
+    client will also manage them.
+
+    Example of loadding snippet with snippet binary on the host:
+
+    .. code-block:: python
+
+      windows_device.load_snippet(
+          name='maps', snippet_binary_host_path='/tmp/snippet_server.exe',
+          snippet_additional_file_host_paths=['/tmp/map_adapter.dll'])
+      windows_device.maps.SayHello('World', 5)
+
+    Users can manage the files on the device by themselves for custom
+    optimization. Set the parameter `snippet_binary_device_path`, then the
+    snippet client will not upload or delete the binary file, but only run the
+    binary to launch the snippet. When `snippet_binary_device_path` is set,
+    the `snippet_binary_host_path` and `snippet_additional_file_host_paths`
+    should be None.
+
+    Example of loading snippet with uploaded snippet binary:
+
+    .. code-block:: python
+
+      windows_device.load_snippet(
+          name='maps',
+          snippet_binary_device_path=r'C:\temp\snippet\maps_snippet.exe')
+      windows_device.maps.SayHello('World', 5)
+
+    Args:
+      name: the attribute name to which to attach the snippet client. E.g.
+        `name='maps'` attaches the snippet client to `self.maps`.
+      snippet_binary_host_path: the host path of the snippet binary. If this
+        argument is set, the snippet client will manage the binary file on the
+        device side. This argument must not be used together with
+        `snippet_binary_device_path`.
+      snippet_additional_file_host_paths: an optional host path list of
+        additional files that are needed by the snippet binary, e.g. DLL files.
+        The snippet client will manage these files. These files will be uploaded
+        to the same directory as the snippet binary. This argument can only be
+        used when `snippet_binary_host_path` is set.
+      snippet_binary_device_path: the device path of the snippet binary. If this
+        argument is set, users should manage the files on the device by
+        themselves. The snippet client only uses this binary to launch the
+        snippet. This argument must not be used together with
+        `snippet_binary_host_path`.
+
+    Raises:
+      errors.SnippetLoadError: illegal load operations are attempted.
+    """
+    if client := self._snippet_clients.get(name):
+      raise errors.SnippetLoadError(
+          self, f'Attribute "{name}" is already registered with package '
+          f'"{client.package}", it cannot be used again.')
+
+    if hasattr(self, name):
+      raise errors.SnippetLoadError(
+          f'Attribute "{name}" already exists, please use a different name.')
+
+    client = snippet_client.SnippetClient(
+        device=self,
+        snippet_binary_host_path=snippet_binary_host_path,
+        snippet_additional_file_host_paths=snippet_additional_file_host_paths,
+        snippet_binary_device_path=snippet_binary_device_path)
+    client.initialize()
+    self._snippet_clients[name] = client
+
+  def _unload_all_snippets(self) -> None:
+    """Unloads all the snippets from this device object.
+
+    This function stops all the snippet clients and deletes corresponding
+    attributes from this device object.
+    """
+    for name, client in self._snippet_clients.items():
+      self.log.debug('Stopping snippet %s', name)
+      client.stop()
+
+    self._snippet_clients = {}
+
+  # Compared with setattr/delattr, overriding the __getattr__ function helps
+  # static analysis tools to recognize that this class contains dynamic
+  # properties and thus avoids some warnings, e.g. IDE warning.
+  def __getattr__(self, name: str) -> snippet_client.SnippetClient:
+    if client := self._snippet_clients.get(name):
+      return client
+
+    raise AttributeError(
+        f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
   def install_msi(
       self,
